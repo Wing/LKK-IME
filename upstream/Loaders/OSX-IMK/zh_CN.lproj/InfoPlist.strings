@@ -1,0 +1,4 @@
+CFBundleName = "LKK 输入法";
+CFBundleDisplayName = "LKK 输入法";
+NSHumanReadableCopyright = "雅虎国际资讯 版权所有\n© 2008-2010 Yahoo! Taiwan All Rights Reserved";
+io.github.wing.lkkime = "LKK 输入法";

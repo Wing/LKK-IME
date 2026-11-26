@@ -1,0 +1,4 @@
+CFBundleName = "LKK";
+CFBundleDisplayName = "LKK";
+NSHumanReadableCopyright = "Copyright © 2008-2010 Yahoo! Taiwan All Rights Reserved";
+io.github.wing.lkkime = "LKK";

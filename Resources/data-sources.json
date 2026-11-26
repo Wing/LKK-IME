@@ -1,0 +1,35 @@
+{
+  "repository": "https://github.com/openvanilla/McBopomofo",
+  "commit": "649bb975a1b12bc04729b9fa91958fd452eb003f",
+  "license": "MIT",
+  "files": {
+    "BPMFBase.txt": {
+      "path": "Source/Data/BPMFBase.txt",
+      "sha256": "0acea11158afb2d4bf6e81729b427c3807c377c9656f6438221ac510ccae29bd"
+    },
+    "BPMFMappings.txt": {
+      "path": "Source/Data/BPMFMappings.txt",
+      "sha256": "8a8ac66b8e673f4f6d985d16f841f8a5385399d840c9debdbf6e32049785f9e2"
+    },
+    "phrase.occ": {
+      "path": "Source/Data/phrase.occ",
+      "sha256": "d308f09f4e1f19d066f8ccdfc05188fb44f76987ff2eb2db6d87e6bdc59e1b8b"
+    },
+    "exclusion.txt": {
+      "path": "Source/Data/exclusion.txt",
+      "sha256": "d0d72eb220d31d5800658de8d788a9e2531b504e9f05ffe633fb11d43d217a3d"
+    },
+    "heterophony1.list": {
+      "path": "Source/Data/heterophony1.list",
+      "sha256": "7fddbb6a66022b1809181484c7627d79dee4231849cb2d3c8c8cd4578b3d22cb"
+    },
+    "heterophony2.list": {
+      "path": "Source/Data/heterophony2.list",
+      "sha256": "4afd69a2702ae3af533cd01b755f81d77a430ace91311a8229319334aec24e37"
+    },
+    "heterophony3.list": {
+      "path": "Source/Data/heterophony3.list",
+      "sha256": "8be3f37fe419744c3792df1bdfc67a0abdb215dbbb759c92204d4f8d68a32cd9"
+    }
+  }
+}

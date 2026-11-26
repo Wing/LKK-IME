@@ -1,0 +1,5 @@
+/* Localized versions of Info.plist keys */
+
+CFBundleName = "LKK 输入法偏好设置";
+CFBundleDisplayName = "LKK 输入法偏好设置";
+NSHumanReadableCopyright = "雅虎国际资讯 版权所有 © 2008-2010, Yahoo! Taiwan All Rights Reserved.";

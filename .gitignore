@@ -1,0 +1,10 @@
+/build/
+/upstream/build/
+*.xcuserstate
+xcuserdata/
+.DS_Store
+__pycache__/
+/upstream/Distributions/Takao/CookedDatabase/
+/upstream/ModulePackages/OVAFPhraseConverter/Phrases.cin
+/upstream/ModulePackages/OVOFHanConvert/VXHCSC2TCTable.c
+/upstream/ModulePackages/OVOFHanConvert/VXHCTC2SCTable.c
