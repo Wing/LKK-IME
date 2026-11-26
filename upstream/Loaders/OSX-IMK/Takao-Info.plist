@@ -12,21 +12,23 @@
 	<string>io.github.wing.lkkime</string>
 	<key>CFBundleName</key>
 	<string>${PRODUCT_NAME}</string>	
+	<key>CFBundleDisplayName</key>
+	<string>LKK-IME</string>
 	<key>CFBundleInfoDictionaryVersion</key>
 	<string>6.0</string>
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleVersion</key>
-    <string>0.1.0</string>
+    <string>0.1.1</string>
 	<key>CFBundleShortVersionString</key>
-	<string>0.1.0</string>
+	<string>0.1.1</string>
 	<key>InputMethodConnectionName</key>
 	<string>LKKIME_1_Connection</string>
 	<key>InputMethodServerControllerClass</key>
 	<string>OpenVanillaController</string>
 	<key>InputMethodServerDelegateClass</key>
 	<string>OpenVanillaController</string>
-	<key>LSBackgroundOnly</key>
+	<key>LSUIElement</key>
 	<true/>
 	<key>LSHasLocalizedDisplayName</key>
 	<true/>

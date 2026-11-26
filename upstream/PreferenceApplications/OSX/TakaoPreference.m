@@ -160,9 +160,17 @@ file for terms.
 
 #pragma mark NSWindow delegate methods
 
-- (void)windowWillClose:(NSNotification *)notification
+- (BOOL)windowShouldClose:(NSWindow *)sender
 {
-	[[NSApplication sharedApplication] terminate:self];
+    // Keep an in-flight update download alive when the window is closed.
+    [sender orderOut:self];
+    return NO;
+}
+
+- (BOOL)applicationShouldHandleReopen:(NSApplication *)application hasVisibleWindows:(BOOL)visible
+{
+    [window makeKeyAndOrderFront:self];
+    return YES;
 }
 
 @end

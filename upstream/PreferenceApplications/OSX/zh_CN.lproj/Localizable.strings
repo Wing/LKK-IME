@@ -71,3 +71,9 @@
 "Remove" = "删除";
 "Please select a plugin." = "请选择您想要删除的插件";
 "Do you really want to remove the plugin '%@'?" = "您确定要删除“%@”这个插件么？";
+"Download Update" = "下载更新";
+"New version available" = "有新版本可供下载";
+"Downloading update..." = "正在下载更新…";
+"Download complete" = "下载完成";
+"Download failed; opening release page." = "下载失败，正在打开发布页面。";
+"Installer is not trusted by macOS; opening release page." = "macOS 尚未信任安装包，正在打开发布页面。";

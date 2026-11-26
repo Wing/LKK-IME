@@ -26,6 +26,8 @@ xcrun clang++ -arch arm64 -std=c++11 -Wno-parentheses -include unistd.h -F"$PROD
 TEST_DIR=$(mktemp -d "$STAGE/test.XXXXXX")
 cp "$SRC/Distributions/Takao/CookedDatabase/KeyKey.db" "$TEST_DIR/model.db"
 build/port-behavior-test "$TEST_DIR/model.db" "$TEST_DIR"
+xcrun clang -arch arm64 -fblocks -framework Foundation "$ROOT/upstream/Tests/UpdateManifestTest.m" -o build/update-manifest-test
+build/update-manifest-test
 mkdir -p "$APP/Contents/Resources/Licenses"
 cp LICENSE "$APP/Contents/Resources/"
 cp docs/THIRD-PARTY-NOTICES.md "$APP/Contents/Resources/"
@@ -48,6 +50,7 @@ mkdir -p build/artifacts
 ARTIFACT="build/artifacts/LKK-IME-arm64.zip"
 ditto --norsrc --noextattr -c -k --keepParent "$APP" "$ARTIFACT"
 (cd build/artifacts && shasum -a 256 LKK-IME-arm64.zip > LKK-IME-arm64.zip.sha256)
-COPYFILE_DISABLE=1 pkgbuild --component "$APP" --install-location '/Library/Input Methods' --identifier io.github.wing.lkkime.pkg --version 0.1.0 build/artifacts/LKK-IME-arm64.pkg
+VERSION=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "$APP/Contents/Info.plist")
+COPYFILE_DISABLE=1 pkgbuild --component "$APP" --install-location '/Library/Input Methods' --identifier io.github.wing.lkkime.pkg --version "$VERSION" build/artifacts/LKK-IME-arm64.pkg
 (cd build/artifacts && shasum -a 256 LKK-IME-arm64.pkg > LKK-IME-arm64.pkg.sha256)
 printf 'Development archive: %s\nBuild workspace: %s\n' "$ARTIFACT" "$STAGE"

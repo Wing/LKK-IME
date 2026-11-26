@@ -6,6 +6,7 @@
 #import "Minotaur.h"
 //#import "Version.h"
 #import "OpenVanillaController.h"
+#import "LKKUpdateManifest.h"
 
 #if (MAC_OS_X_VERSION_MAX_ALLOWED < MAC_OS_X_VERSION_10_5)
 #import <zlib.h>
@@ -473,6 +474,7 @@ extern "C" {
 - (void)applicationDidFinishLaunching:(NSNotification *)aNotification
 {
 	[[NSAppleEventManager sharedAppleEventManager] setEventHandler:self andSelector:@selector(handleIncomingURL:withReplyEvent:) forEventClass:kInternetEventClass andEventID:kAEGetURL];
+    if (LKKCheckOnLaunchEnabled()) LKKFetchUpdateManifest(nil);
 }
 
 @end

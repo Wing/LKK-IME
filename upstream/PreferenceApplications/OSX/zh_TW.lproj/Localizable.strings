@@ -71,3 +71,9 @@
 "Remove" = "刪除";
 "Please select a plugin." = "請選擇您想要刪除的外掛模組";
 "Do you really want to remove the plugin '%@'?" = "您確定要刪除「%@」這個外掛模組嗎？";
+"Download Update" = "下載更新";
+"New version available" = "有新版本可供下載";
+"Downloading update..." = "正在下載更新…";
+"Download complete" = "下載完成";
+"Download failed; opening release page." = "下載失敗，正在開啟發布頁面。";
+"Installer is not trusted by macOS; opening release page." = "macOS 尚未信任安裝檔，正在開啟發布頁面。";

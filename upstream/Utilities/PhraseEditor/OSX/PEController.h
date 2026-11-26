@@ -10,7 +10,7 @@
 #import "PESettingTableView.h"
 #import "LFUtilities.h"
 
-#define HELP_URL	@"http://tw.widget.yahoo.com/keykey/help/phraseeditor.html"
+#define HELP_URL	@"https://github.com/Wing/LKK-IME"
 
 #ifndef OPENVANILLA_DO_CONNECTION_NAME
 	#error Must define OPENVANILLA_DO_CONNECTION_NAME

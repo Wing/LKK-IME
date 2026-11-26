@@ -7,131 +7,187 @@ file for terms.
 
 #import "TakaoUpdate.h"
 #import "TakaoHelper.h"
+#import "../../Loaders/OSX-IMK/LKKUpdateManifest.h"
+#import <CommonCrypto/CommonDigest.h>
+
 
 @implementation TakaoUpdate
 
-- (void)dealloc
+- (NSString *)currentVersion
 {
-	if (_task)
-		[_task terminate];
-	[_task release];
-	[super dealloc];
+    NSString *path = [[[[NSBundle mainBundle] bundlePath] stringByDeletingLastPathComponent] stringByDeletingLastPathComponent];
+    path = [path stringByDeletingLastPathComponent];
+    return [[NSBundle bundleWithPath:path] objectForInfoDictionaryKey:@"CFBundleShortVersionString"] ?: @"0.1.0";
 }
-- (void)_getVersionInfo
-{	
-	id ovService;
-	
-    // @try {
-		ovService = [NSConnection rootProxyForConnectionWithRegisteredName:OPENVANILLA_DO_CONNECTION_NAME host:nil];		
-    // }
-    // @catch(NSException *e) {
-        // NSLog(@"Exceptions raise on retreiving version info");
-        // [_currentVersionTextField setStringValue:@""];          
-        // [_latestVersionTextField setStringValue:@""];        
-        // [_latestCheckTextField setStringValue:@""];          
-        // return;
-    // }
 
-	if (ovService) {
-		[ovService setProtocolForProxy:@protocol(OpenVanillaService)];
-		NSString *version = [ovService version];
-		if (version) 
-			[_currentVersionTextField setStringValue:version];
-		else
-			[_currentVersionTextField setStringValue:@""];	
-			
-		NSString *latestVersion = [ovService latestVersion];		
-		if (latestVersion)
-			[_latestVersionTextField setStringValue:latestVersion];
-		else
-			[_latestVersionTextField setStringValue:@""];
-			
-		NSString *latestCheck = [ovService latestCheck];
-		if (latestCheck)
-			[_latestCheckTextField setStringValue:latestCheck];
-		else
-			[_latestCheckTextField setStringValue:@""];	
-	}
-	else {
-		[_currentVersionTextField setStringValue:@""];			
-		[_latestVersionTextField setStringValue:@""];		
-		[_latestCheckTextField setStringValue:@""];			
-	}
+- (void)refreshManifest:(NSDictionary *)manifest
+{
+    if (_manifest != manifest) {
+        [_manifest release];
+        _manifest = [manifest retain];
+    }
+    NSString *latest = [_manifest objectForKey:@"version"];
+    NSString *current = [self currentVersion];
+    [_currentVersionTextField setStringValue:current];
+    [_latestVersionTextField setStringValue:latest ?: @""];
+    NSDate *checked = [_manifest objectForKey:@"checked"];
+    NSDateFormatter *formatter = [[[NSDateFormatter alloc] init] autorelease];
+    [formatter setDateStyle:NSDateFormatterMediumStyle];
+    [formatter setTimeStyle:NSDateFormatterShortStyle];
+    [_latestCheckTextField setStringValue:checked ? [formatter stringFromDate:checked] : @""];
+    BOOL available = LKKValidVersion(latest) && [latest compare:current options:NSNumericSearch] == NSOrderedDescending;
+    [_downloadButton setHidden:(!available && !_downloading)];
+    [_downloadButton setEnabled:available && !_downloading && !_checking];
 }
+
+- (void)refreshCachedManifest:(NSNotification *)notification
+{
+    if (!_checking && !_downloading)
+        [self refreshManifest:[NSDictionary dictionaryWithContentsOfFile:LKKUpdateCachePath()]];
+}
+
 - (void)awakeFromNib
 {
-	[_checkProgressIndicator setHidden:YES];
-	[self _getVersionInfo];
-}
-- (void)launchDownload:(NSString *)actionURL signatureURL:(NSString *)signatureURL changeLogURL:(NSString *)changeLogURL
-{
-	if (_task) {
-		if ([_task isRunning])
-			return;
-		else
-			[_task release];
-	}
-	
-	NSString *supportPath = [[[NSBundle mainBundle] bundlePath] stringByDeletingLastPathComponent];
-#if (MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_5)
-	NSString *commandPath = [supportPath stringByAppendingString:@"/DownloadUpdate.app/Contents/MacOS/DownloadUpdate"];
-#else
-	NSString *commandPath = [supportPath stringByAppendingString:@"/DownloadUpdateTiger.app/Contents/MacOS/DownloadUpdateTiger"];
-#endif
-	NSArray *arguments = [NSArray arrayWithObjects:actionURL, signatureURL, ((changeLogURL && [changeLogURL length]) ? changeLogURL : @"(null)"),nil];
-	
-	_task = [NSTask launchedTaskWithLaunchPath:commandPath arguments:arguments];
-	[_task retain];
-	[_task launch];
-	[_task waitUntilExit];	
+    NSView *view = [_checkProgressIndicator superview];
+    for (NSView *child in [view subviews]) {
+        if ([child isKindOfClass:[NSButton class]] && [(NSButton *)child action] == @selector(checkUpdateNow:)) {
+            _checkButton = (NSButton *)child;
+            break;
+        }
+    }
+    NSRect frame = [_checkButton frame];
+    _downloadButton = [[[NSButton alloc] initWithFrame:NSMakeRect(NSMaxX(frame) + 2, frame.origin.y, 100, frame.size.height)] autorelease];
+    [_downloadButton setBezelStyle:NSBezelStyleRounded];
+    [_downloadButton setTitle:LFLSTR(@"Download Update")];
+    [_downloadButton setTarget:self];
+    [_downloadButton setAction:@selector(downloadUpdate:)];
+    [view addSubview:_downloadButton];
+    _downloadStatus = [[[NSTextField alloc] initWithFrame:NSMakeRect(20, 0, 440, 16)] autorelease];
+    [_downloadStatus setEditable:NO];
+    [_downloadStatus setSelectable:NO];
+    [_downloadStatus setBordered:NO];
+    [_downloadStatus setDrawsBackground:NO];
+    [view addSubview:_downloadStatus];
+    NSRect checkFrame = [_latestCheckTextField frame];
+    checkFrame.size.width = 260;
+    [_latestCheckTextField setFrame:checkFrame];
+    [_checkProgressIndicator setHidden:YES];
+    [self refreshCachedManifest:nil];
+    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(refreshCachedManifest:) name:NSApplicationDidBecomeActiveNotification object:nil];
 }
 
-#pragma mark Interface Builder actions
+- (void)dealloc
+{
+    [[NSNotificationCenter defaultCenter] removeObserver:self];
+    [_manifest release];
+    [_downloadSession invalidateAndCancel];
+    [_downloadSession release];
+    [super dealloc];
+}
 
 - (IBAction)checkUpdateNow:(id)sender
 {
-	[_checkProgressIndicator startAnimation:self];	
-	[_checkProgressIndicator setHidden:NO];
-	
-	NSDictionary *updateDictionary;
-	
-	id ovService = [NSConnection rootProxyForConnectionWithRegisteredName:OPENVANILLA_DO_CONNECTION_NAME host:nil];
-	if (ovService) {
-		[ovService setProtocolForProxy:@protocol(OpenVanillaService)];
-		updateDictionary = [ovService shouldUpdate];
-		
-		[_checkProgressIndicator stopAnimation:self];
-		[_checkProgressIndicator setHidden:YES];
-		// NSLog(@"update dict: %@", [updateDictionary description]);
-		
-		NSString *status = [updateDictionary valueForKey:@"Status"];
-		if ([status isEqualToString:@"Error"]) {
-			NSAlert *alert = [NSAlert alertWithMessageText:LFLSTR(@"Unable to check for update via the Internet.") defaultButton:LFLSTR(@"OK") alternateButton:nil otherButton:nil informativeTextWithFormat:LFLSTR(@"Please check your Internet connection and try again.")];
-			[alert beginSheetModalForWindow:_window modalDelegate:self didEndSelector:nil contextInfo:nil];
-		}
-		else if ([status isEqualToString:@"No"]) {
-			NSAlert *alert = [NSAlert alertWithMessageText:LFLSTR(@"You are now using the newest version.") defaultButton:LFLSTR(@"OK") alternateButton:nil otherButton:nil informativeTextWithFormat:LFLSTR(@"You need not to update your software")];
-			[alert beginSheetModalForWindow:_window modalDelegate:self didEndSelector:nil contextInfo:nil];			
-		}
-		else if ([status isEqualToString:@"Yes"]) {
-			NSString *actionURL = [updateDictionary objectForKey:@"ActionURL"];
-			NSString *signatureURL = [updateDictionary objectForKey:@"SignatureURL"];
-            NSString *changeLogURL = [updateDictionary objectForKey:@"ChangeLogURL"];
-			[self launchDownload:actionURL signatureURL:signatureURL changeLogURL:changeLogURL];
-		}
-		else {
-			NSAlert *alert = [NSAlert alertWithMessageText:LFLSTR(@"Unable to check for update via the Internet.") defaultButton:LFLSTR(@"OK") alternateButton:nil otherButton:nil informativeTextWithFormat:LFLSTR(@"Unknown errors happened, please try again.")];			
-			[alert beginSheetModalForWindow:_window modalDelegate:self didEndSelector:nil contextInfo:nil];
-		}
-	}
-	else {
-		[_checkProgressIndicator stopAnimation:self];
-		[_checkProgressIndicator setHidden:YES];	
-		NSAlert *alert = [NSAlert alertWithMessageText:LFLSTR(@"Unable to check for update via the Internet.") defaultButton:LFLSTR(@"OK") alternateButton:nil otherButton:nil informativeTextWithFormat:LFLSTR(@"If you are nor running LKK, you are not able to check for update.")];
-		[alert runModal];
-	}
-	[self _getVersionInfo];	
+    if (_checking || _downloading) return;
+    _checking = YES;
+    [_checkButton setEnabled:NO];
+    [_downloadButton setEnabled:NO];
+    [_downloadButton setHidden:YES];
+    [_checkProgressIndicator setHidden:NO];
+    [_checkProgressIndicator startAnimation:self];
+    LKKFetchUpdateManifest(^(NSDictionary *manifest) {
+        dispatch_async(dispatch_get_main_queue(), ^{
+            _checking = NO;
+            [_checkProgressIndicator stopAnimation:self];
+            [_checkProgressIndicator setHidden:YES];
+            [_checkButton setEnabled:YES];
+            if (manifest) {
+                [self refreshManifest:manifest];
+                [_downloadStatus setStringValue:[_downloadButton isHidden] ? LFLSTR(@"You are now using the newest version.") : LFLSTR(@"New version available")];
+            } else {
+                [self refreshCachedManifest:nil];
+                [_downloadStatus setStringValue:LFLSTR(@"Unable to check for update via the Internet.")];
+            }
+        });
+    });
 }
 
+- (void)downloadFailed
+{
+    dispatch_async(dispatch_get_main_queue(), ^{
+        if (!_downloading) return;
+        _downloading = NO;
+        [_checkButton setEnabled:YES];
+        [self refreshManifest:_manifest];
+        [_downloadStatus setStringValue:LFLSTR(@"Download failed; opening release page.")];
+        [[NSWorkspace sharedWorkspace] openURL:LKKReleasePage()];
+    });
+}
 
+- (IBAction)downloadUpdate:(id)sender
+{
+    if (_downloading || _checking) return;
+    NSURL *url = LKKPackageURL([_manifest objectForKey:@"version"]);
+    if (!url) return;
+    _downloading = YES;
+    [_checkButton setEnabled:NO];
+    [_downloadButton setEnabled:NO];
+    [_downloadStatus setStringValue:LFLSTR(@"Downloading update...")];
+    NSURLSessionConfiguration *configuration = [NSURLSessionConfiguration ephemeralSessionConfiguration];
+    configuration.timeoutIntervalForResource = 600;
+    [_downloadSession release];
+    _downloadSession = [[NSURLSession sessionWithConfiguration:configuration delegate:self delegateQueue:nil] retain];
+    [[_downloadSession downloadTaskWithURL:url] resume];
+}
+
+- (void)URLSession:(NSURLSession *)session downloadTask:(NSURLSessionDownloadTask *)task didWriteData:(int64_t)bytes totalBytesWritten:(int64_t)written totalBytesExpectedToWrite:(int64_t)expected
+{
+    if (written > 128 * 1024 * 1024) { [task cancel]; return; }
+    dispatch_async(dispatch_get_main_queue(), ^{
+        if (_downloading && expected > 0)
+            [_downloadStatus setStringValue:[NSString stringWithFormat:@"%@ %.0f%%", LFLSTR(@"Downloading update..."), 100.0 * written / expected]];
+    });
+}
+
+- (void)URLSession:(NSURLSession *)session downloadTask:(NSURLSessionDownloadTask *)task didFinishDownloadingToURL:(NSURL *)location
+{
+    NSHTTPURLResponse *response = (NSHTTPURLResponse *)[task response];
+    NSData *data = [NSData dataWithContentsOfURL:location options:NSDataReadingMappedIfSafe error:NULL];
+    if (![response isKindOfClass:[NSHTTPURLResponse class]] || [response statusCode] != 200 || ![[[response URL] scheme] isEqualToString:@"https"] || !data || [data length] > 128 * 1024 * 1024) { [self downloadFailed]; return; }
+    unsigned char digest[CC_SHA256_DIGEST_LENGTH];
+    CC_SHA256([data bytes], (CC_LONG)[data length], digest);
+    NSMutableString *hash = [NSMutableString string];
+    for (NSUInteger index = 0; index < CC_SHA256_DIGEST_LENGTH; ++index) [hash appendFormat:@"%02x", digest[index]];
+    if (![hash isEqualToString:[_manifest objectForKey:@"sha256"]]) { [self downloadFailed]; return; }
+    NSURL *downloads = [[[NSFileManager defaultManager] URLsForDirectory:NSDownloadsDirectory inDomains:NSUserDomainMask] firstObject];
+    if (!downloads) { [self downloadFailed]; return; }
+    NSString *name = [NSString stringWithFormat:@"LKK-IME-%@-%@.pkg", [_manifest objectForKey:@"version"], [[NSUUID UUID] UUIDString]];
+    NSURL *destination = [downloads URLByAppendingPathComponent:name];
+    if (![[NSFileManager defaultManager] moveItemAtURL:location toURL:destination error:NULL]) { [self downloadFailed]; return; }
+    // Never automatically launch a package that fails the system trust assessment.
+    NSTask *assessment = [[[NSTask alloc] init] autorelease];
+    [assessment setLaunchPath:@"/usr/sbin/spctl"];
+    [assessment setArguments:@[@"--assess", @"--type", @"install", [destination path]]];
+    [assessment setStandardOutput:[NSFileHandle fileHandleWithNullDevice]];
+    [assessment setStandardError:[NSFileHandle fileHandleWithNullDevice]];
+    BOOL trusted = NO;
+    @try { [assessment launch]; [assessment waitUntilExit]; trusted = [assessment terminationStatus] == 0; } @catch (NSException *exception) {}
+    dispatch_async(dispatch_get_main_queue(), ^{
+        _downloading = NO;
+        [_checkButton setEnabled:YES];
+        [self refreshManifest:_manifest];
+        if (trusted) {
+            [_downloadStatus setStringValue:LFLSTR(@"Download complete")];
+            [[NSWorkspace sharedWorkspace] openURL:destination];
+        } else {
+            [_downloadStatus setStringValue:LFLSTR(@"Installer is not trusted by macOS; opening release page.")];
+            [[NSWorkspace sharedWorkspace] openURL:LKKReleasePage()];
+        }
+    });
+}
+
+- (void)URLSession:(NSURLSession *)session task:(NSURLSessionTask *)task didCompleteWithError:(NSError *)error
+{
+    if (error) [self downloadFailed];
+    [session finishTasksAndInvalidate];
+}
 @end

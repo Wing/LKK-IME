@@ -18,14 +18,20 @@ file for terms.
 	and download the newer version.	
 */
 
-@interface TakaoUpdate : NSObject
+@interface TakaoUpdate : NSObject <NSURLSessionDownloadDelegate>
 {
 	IBOutlet id _checkProgressIndicator;
 	IBOutlet id _currentVersionTextField;
 	IBOutlet id _latestVersionTextField;
 	IBOutlet id _latestCheckTextField;
 	IBOutlet id _window;
-	NSTask *_task;
+    NSButton *_downloadButton;
+    NSButton *_checkButton;
+    NSTextField *_downloadStatus;
+    NSDictionary *_manifest;
+    NSURLSession *_downloadSession;
+    BOOL _checking;
+    BOOL _downloading;
 }
 
 /*!

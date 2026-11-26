@@ -28,6 +28,12 @@ bash scripts/build.sh
 
 The script builds the original Xcode targets, generates the replacement SQLite database, tests the original input contexts, and creates an ad-hoc-signed development ZIP, PKG, and SHA-256 checksums in `build/artifacts/`.
 
+## 軟體更新 / Software updates
+
+偏好設定的「軟體更新」從 GitHub 取得版本資訊，並在你按下下載更新後驗證安裝檔 SHA-256。下載期間可關閉偏好設定視窗；只有通過 macOS 安裝信任檢查的安裝檔才會自動開啟安裝器。尚未公證的開發版會提示並開啟發布頁，並不自動安裝。
+
+The Software Update pane checks GitHub for version information and verifies the SHA-256 of the package before opening it. Downloads continue when the preferences window is closed. The installer opens only if the package passes the macOS install trust assessment; unsigned development packages instead direct the user to the releases page.
+
 ## 狀態 / Status
 
 目前為開發測試版本，尚未完成 Apple 公證。原始商業詞庫未包含於本專案，因此候選詞排序與繁簡轉換結果可能有所不同。已停止的 Yahoo 字典、更新、MobileMe 與網路服務不再提供；正式發布前仍需完成實際應用程式與外觀驗收。
